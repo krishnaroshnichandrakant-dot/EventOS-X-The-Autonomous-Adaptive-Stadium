@@ -117,7 +117,7 @@ export default function SmartActionCenter() {
   });
 
   // 4. Weather — rain on uncovered zones
-  const rainChance = state.weather?.rainProbability ?? 0;
+  const rainChance = state.weather?.current?.rainProbability ?? 0;
   const uncoveredZones = state.zones.filter((z) => !z.isCovered);
   if (rainChance > 40 && uncoveredZones.length > 0) {
     suggestions.push({

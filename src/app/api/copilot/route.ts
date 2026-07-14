@@ -88,7 +88,7 @@ function getMockResponse(message: string): string {
   const lower = message.toLowerCase();
 
   // ---- Extract live context from the [Live Data: ...] suffix ----
-  const contextMatch = message.match(/\[Live Data:\s*(.*?)\]/s);
+  const contextMatch = message.match(/\[Live Data:\s*([\s\S]*?)\]/);
   const ctx: Record<string, string> = {};
   if (contextMatch) {
     const pairs = contextMatch[1].split(',').map((s) => s.trim());
