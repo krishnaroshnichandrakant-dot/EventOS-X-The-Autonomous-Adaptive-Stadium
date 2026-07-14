@@ -173,6 +173,7 @@ export type StadiumAction =
   | { type: 'SET_EVENT_STATUS'; payload: EventStatus }
   | { type: 'START_SIMULATION'; payload: string }  // scenario id
   | { type: 'STOP_SIMULATION' }
+  | { type: 'OPEN_ALL_GATES' }
   | { type: 'SELECT_ZONE'; payload: string | null }
   | { type: 'SELECT_RISK'; payload: string | null }
   | { type: 'BULK_UPDATE'; payload: Partial<StadiumState> }

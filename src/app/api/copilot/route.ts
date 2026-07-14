@@ -81,138 +81,137 @@ If no action is requested, set "action": "NONE", and write your normal helpful r
 }
 
 /**
- * Mock JSON responses for agentic execution.
+ * Dynamic Mock Responses — Parses [Live Data: ...] context suffix to produce
+ * context-aware answers that reflect the actual stadium state.
  */
 function getMockResponse(message: string): string {
   const lower = message.toLowerCase();
 
-  // Close Gate A command
-  if (lower.includes('close gate a')) {
-    return JSON.stringify({
-      action: 'TOGGLE_GATE',
-      payload: { id: 'gate-a', status: 'closed' },
-      reply: `**Action Executed: Closing Gate A.**
-
-I have dispatched a command to the gate control system to close Gate A. 
-
-**Downstream Cascade Prediction:**
-- Incoming flow from Gate A is now redirecting to adjacent gates (Gate B & Gate F).
-- Concourse North is expected to see a rise in density within 3 minutes.
-- I recommend deploying safety personnel to Gate B to manage increased flow rates.`,
+  // ---- Extract live context from the [Live Data: ...] suffix ----
+  const contextMatch = message.match(/\[Live Data:\s*(.*?)\]/s);
+  const ctx: Record<string, string> = {};
+  if (contextMatch) {
+    const pairs = contextMatch[1].split(',').map((s) => s.trim());
+    pairs.forEach((p) => {
+      const [key, ...rest] = p.split(':');
+      if (key && rest.length > 0) ctx[key.trim().toLowerCase()] = rest.join(':').trim();
     });
   }
 
-  // Close Gate B command
-  if (lower.includes('close gate b')) {
+  const stadiumName = ctx['stadium'] || 'the stadium';
+  const occ = ctx['occupancy'] || '62%';
+  const openGates = ctx['open gates'] || '5/6';
+  const temp = ctx['temp'] || '28°C';
+  const rain = ctx['rain'] || '25%';
+  const wind = ctx['wind'] || '12 km/h';
+  const zones = ctx['zones'] || '';
+
+  // ---- Action Commands (still mock-execute) ----
+
+  // Close any gate
+  const closeGateMatch = lower.match(/close\s+gate\s+([a-z0-9]+)/);
+  if (closeGateMatch) {
+    const gateId = `gate-${closeGateMatch[1]}`;
+    const gateName = `Gate ${closeGateMatch[1].toUpperCase()}`;
     return JSON.stringify({
       action: 'TOGGLE_GATE',
-      payload: { id: 'gate-b', status: 'closed' },
-      reply: `**Action Executed: Closing Gate B.**
-
-I have instructed the control system to close Gate B. 
-
-**Downstream Cascade Prediction:**
-- Incoming flow redirecting toward Gate A and Gate C.
-- North Stand occupancy will likely rise. Rerouting digital signage is recommended.`,
+      payload: { id: gateId, status: 'closed' },
+      reply: `**Action Executed: Closing ${gateName} at ${stadiumName}.**\n\nI have dispatched a command to close ${gateName}. Current stadium occupancy is ${occ}.\n\n**Downstream Impact:**\n- Adjacent gates will absorb redirected crowd flow.\n- Monitor the occupancy trend over the next 5 minutes to confirm stabilization.\n- Current weather: ${temp}, ${rain} rain chance — ${parseInt(rain) > 40 ? '⚠️ rain gear should be staged in open areas' : 'conditions are favorable'}.`,
     });
   }
 
-  // Open Gate A command
-  if (lower.includes('open gate a')) {
+  // Open any gate
+  const openGateMatch = lower.match(/open\s+gate\s+([a-z0-9]+)/);
+  if (openGateMatch) {
+    const gateId = `gate-${openGateMatch[1]}`;
+    const gateName = `Gate ${openGateMatch[1].toUpperCase()}`;
     return JSON.stringify({
       action: 'TOGGLE_GATE',
-      payload: { id: 'gate-a', status: 'open' },
-      reply: `**Action Executed: Opening Gate A.**
-
-Gate A has been opened. Crowd flow is normalizing. Current flow rate will stabilize at ~120 ppl/min.`,
+      payload: { id: gateId, status: 'open' },
+      reply: `**Action Executed: Opening ${gateName} at ${stadiumName}.**\n\n${gateName} is now open and accepting crowd inflow. Current stadium occupancy: ${occ}. Gate status: ${openGates}.`,
     });
   }
 
-  // Simulate rain command
+  // Simulate rain
   if (lower.includes('simulate rain') || lower.includes('rain simulation')) {
     return JSON.stringify({
       action: 'START_SIMULATION',
       payload: { id: 'sudden-rain' },
-      reply: `**Action Executed: Initializing Rainstorm Simulation.**
-
-Launching the sudden rainstorm cascade. Spectators in uncovered zones (East, West, Field) will begin moving to shelter.`,
+      reply: `**Action Executed: Rainstorm Simulation at ${stadiumName}.**\n\nLaunching sudden rainstorm cascade. Current rain probability is ${rain}. Spectators in uncovered zones will begin relocating to sheltered areas.\n\n**Current Conditions:** ${temp}, Wind ${wind}.`,
     });
   }
 
-  // Simulate gate failure command
-  if (lower.includes('simulate gate failure') || lower.includes('gate failure simulation')) {
+  // Simulate gate failure
+  if (lower.includes('simulate gate failure') || lower.includes('gate failure')) {
     return JSON.stringify({
       action: 'START_SIMULATION',
       payload: { id: 'gate-failure' },
-      reply: `**Action Executed: Initializing Gate B Failure Simulation.**
-
-Closing Gate B and simulating crowd flow redirection and queue buildup.`,
+      reply: `**Action Executed: Gate Failure Simulation at ${stadiumName}.**\n\nSimulating a critical gate failure. Current gate status: ${openGates}. Watch the cascade effects as flow redistributes across remaining entry points.`,
     });
   }
 
-  // Default risk assessment request
-  if (lower.includes('risk') || lower.includes('danger') || lower.includes('biggest')) {
+  // ---- Informational Queries ----
+
+  // Status / summary
+  if (lower.includes('status') || lower.includes('summary') || lower.includes('summarize') || lower.includes('overview')) {
     return JSON.stringify({
       action: 'NONE',
-      reply: `**Current Risk Assessment**
-
-Based on live stadium data, here are the top concerns:
-
-1. **Zone Overcrowding — North Stand** (HIGH)
-   The North Stand is trending upward at ~75% capacity. If this continues, it could reach critical density within 20 minutes.
-
-   → *Recommended:* Activate crowd diversion messaging to West Stand via PA system.
-
-2. **Rain Forecast** (MEDIUM)
-   There's a 45% chance of rain in the next 2 hours. Open-air zones (East Stand, West Stand, Field Level) have ~10,700 spectators.
-
-   → *Recommended:* Pre-check retractable roof. Have rain ponchos staged for quick distribution.
-
-3. **Gate D Congestion** (MEDIUM)
-   Gate D is operating at near-max flow rate (190/200 ppl/min).
-
-   → *Recommended:* Deploy additional staff to Gate D. Consider redirecting traffic to Gate E.`,
+      reply: `**${stadiumName} — Live Status Report**\n\n| Metric | Value |\n|---|---|\n| 🏟 Occupancy | ${occ} |\n| 🚪 Gates | ${openGates} |\n| 🌡 Temperature | ${temp} |\n| 🌧 Rain Probability | ${rain} |\n| 💨 Wind | ${wind} |\n\n${zones ? `**Zone Highlights:** ${zones}` : ''}\n\n${parseInt(occ) > 80 ? '⚠️ **Alert:** Occupancy is above 80%. Consider activating crowd dispersal protocols.' : '✅ Operations are within normal parameters.'}`,
     });
   }
 
-  // Default congestion response
-  if (lower.includes('congestion') || lower.includes('gate') || lower.includes('crowd')) {
+  // Risk assessment
+  if (lower.includes('risk') || lower.includes('danger') || lower.includes('biggest') || lower.includes('threat') || lower.includes('concern')) {
+    const rainPct = parseInt(rain) || 0;
+    const occPct = parseInt(occ) || 0;
+    const risks: string[] = [];
+    if (occPct >= 75) risks.push(`1. **High Occupancy (${occ})** — ${stadiumName} is nearing capacity. Deploy crowd steering to lower-density zones.`);
+    if (rainPct > 40) risks.push(`${risks.length + 1}. **Rain Risk (${rain})** — Open-air zones need rain cover protocols. Temperature: ${temp}.`);
+    risks.push(`${risks.length + 1}. **Gate Monitoring** — Gate status is ${openGates}. Any congested gate should be monitored for queue buildup.`);
+
     return JSON.stringify({
       action: 'NONE',
-      reply: `**Congestion Analysis**
-
-Gate D is currently showing congestion with a flow rate of 190/200 people per minute. 
-
-**Recommended Action Plan:**
-1. Deploy 2 additional crowd management staff to Gate D.
-2. Activate digital signage directing arrivals to Gate E (currently at 60/200 — plenty of capacity).
-3. Open the auxiliary lane at Gate D to temporarily increase throughput.`,
+      reply: `**Risk Assessment — ${stadiumName}**\n\n${risks.join('\n\n')}\n\n→ *Say "close gate [name]" or "simulate rain" to test mitigation strategies in real-time.*`,
     });
   }
 
-  // Default weather response
-  if (lower.includes('weather') || lower.includes('rain') || lower.includes('temperature')) {
+  // Congestion
+  if (lower.includes('congestion') || lower.includes('queue') || lower.includes('crowd') || lower.includes('flow')) {
     return JSON.stringify({
       action: 'NONE',
-      reply: `**Weather Impact Summary**
-
-Current conditions: 28°C, partly cloudy, 18 km/h wind.
-
-**Key Concerns:**
-- **UV Index: 7** — SUNSCREEN advisory should be active.
-- **Rain Probability: 45%** — Increasing over next 3 hours. Stage rain protocol.`,
+      reply: `**Crowd Flow Analysis — ${stadiumName}**\n\nCurrent occupancy: ${occ} | Gates: ${openGates}\n\n**Recommendations:**\n1. Deploy additional stewards to any congested gates.\n2. Activate digital signage directing arrivals to underutilized entry points.\n3. Monitor zone density trends — ${zones ? zones : 'all zones stable'}.\n\n→ *Try "close gate [name]" to simulate rerouting, or "simulate gate failure" to stress-test.*`,
     });
   }
 
-  // Fallback normal chat response
+  // Weather
+  if (lower.includes('weather') || lower.includes('rain') || lower.includes('temperature') || lower.includes('wind') || lower.includes('heat')) {
+    const rainPct = parseInt(rain) || 0;
+    return JSON.stringify({
+      action: 'NONE',
+      reply: `**Weather Impact — ${stadiumName}**\n\n| Condition | Value |\n|---|---|\n| 🌡 Temperature | ${temp} |\n| 🌧 Rain Probability | ${rain} |\n| 💨 Wind Speed | ${wind} |\n\n${rainPct > 40 ? '⚠️ **Rain Advisory Active.** Uncovered zones should prepare for spectator redistribution. Stage rain ponchos and alert field staff.' : '☀️ Weather conditions are favorable. No immediate action required.'}\n\n${parseInt(temp) > 35 ? '🔥 **Heat Advisory:** Temperature exceeds 35°C. Ensure hydration stations are operational in all zones.' : ''}`,
+    });
+  }
+
+  // Evacuation
+  if (lower.includes('evacuat') || lower.includes('emergency') || lower.includes('clear') || lower.includes('safety')) {
+    return JSON.stringify({
+      action: 'NONE',
+      reply: `**Emergency Protocol — ${stadiumName}**\n\nCurrent occupancy: ${occ} | Gates: ${openGates}\n\n**Recommended Steps:**\n1. Click the **"Emergency: Open All Gates"** button on the map to immediately unlock all entry/exit points.\n2. Activate PA system with evacuation instructions.\n3. Deploy all available safety personnel to high-density zones.\n4. Contact local emergency services if situation escalates.\n\n→ *You can also say "open gate [name]" to open specific gates.*`,
+    });
+  }
+
+  // Capacity / how many people
+  if (lower.includes('capacity') || lower.includes('how many') || lower.includes('people') || lower.includes('spectator')) {
+    return JSON.stringify({
+      action: 'NONE',
+      reply: `**Capacity Report — ${stadiumName}**\n\nCurrent occupancy: **${occ}** of total capacity.\nGate status: ${openGates} gates operational.\n\n${zones ? `**Zone Breakdown:** ${zones}` : 'Zone-level breakdown is available on the interactive map — hover over any zone for real-time stats.'}\n\n${parseInt(occ) > 85 ? '⚠️ Approaching maximum capacity. Consider limiting further entry.' : '✅ Within safe operating capacity.'}`,
+    });
+  }
+
+  // Help / general
   return JSON.stringify({
     action: 'NONE',
-    reply: `I'm EventOS X, your stadium operations copilot. I can help you:
-
-• **Act on the dashboard** — Try saying: *"close Gate A"*, *"open Gate A"*, or *"simulate rain"*
-• **Analyze risks** — Ask: *"What's our biggest risk right now?"*
-• **Manage queues** — Ask: *"Suggest a fix for gate congestion"*
-
-Simply send a command to see the dashboard respond in real-time.`,
+    reply: `I'm **EventOS X Copilot**, your AI-powered operations assistant for **${stadiumName}**.\n\nHere's what I can do:\n\n🎯 **Live Actions**\n• *"Close Gate A"* — Instantly close a gate\n• *"Open Gate B"* — Reopen a gate\n• *"Simulate rain"* — Run a rainstorm cascade\n• *"Simulate gate failure"* — Test a gate failure scenario\n\n📊 **Analysis**\n• *"What's the current status?"* — Full live report\n• *"What's our biggest risk?"* — AI risk assessment\n• *"How's the weather affecting operations?"* — Weather impact analysis\n• *"How many people are in the stadium?"* — Capacity report\n\n🚨 **Safety**\n• *"Emergency evacuation protocol"* — Safety procedures\n\nCurrent stats: ${occ} occupancy | ${openGates} gates | ${temp}`,
   });
 }
+

@@ -5,6 +5,7 @@ import { StadiumProvider, useStadium } from '@/store/stadiumStore';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import StadiumMap from '@/components/stadium/StadiumMap';
+import SmartActionCenter from '@/components/stadium/SmartActionCenter';
 import GateStatusList from '@/components/stadium/GateStatusList';
 import ZoneDetailPanel from '@/components/stadium/ZoneDetailPanel';
 import WeatherOverview from '@/components/climate/WeatherOverview';
@@ -56,8 +57,9 @@ function DashboardContent() {
           {activeSection === 'dashboard' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 max-w-[1600px] mx-auto">
               {/* Row 1: Stadium Map + Gates */}
-              <div className="lg:col-span-8">
+              <div className="lg:col-span-8 space-y-5">
                 <StadiumMap />
+                <SmartActionCenter />
               </div>
               <div className="lg:col-span-4 space-y-5">
                 <GateStatusList />
@@ -89,8 +91,9 @@ function DashboardContent() {
 
           {activeSection === 'stadium' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 max-w-[1600px] mx-auto">
-              <div className="lg:col-span-8">
+              <div className="lg:col-span-8 space-y-5">
                 <StadiumMap />
+                <SmartActionCenter />
               </div>
               <div className="lg:col-span-4 space-y-5">
                 <GateStatusList />

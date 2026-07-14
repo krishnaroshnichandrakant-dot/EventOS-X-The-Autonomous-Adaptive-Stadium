@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { StadiumState, StadiumAction, Zone, Gate, HistoryItem } from '@/types';
-import { initialZones, initialGates, simulateCrowdFluctuation, getInitialDataForStadium } from '@/data/mockData';
+import { initialZones, initialGates, simulateCrowdFluctuation, getInitialDataForStadium, defaultStadium } from '@/data/mockData';
 import { riskScenarios } from '@/data/scenarios';
 import { evaluateRisks } from '@/lib/riskEngine';
 import { calculateCascade } from '@/lib/cascadeEngine';
@@ -11,7 +11,7 @@ import { calculateCascade } from '@/lib/cascadeEngine';
 // Initial State
 // ============================================================
 const initialState: StadiumState = {
-  selectedStadiumId: 'wembley',
+  selectedStadiumId: defaultStadium,
   zones: initialZones,
   gates: initialGates,
   weather: null,
@@ -110,6 +110,16 @@ function stadiumReducer(state: StadiumState, action: StadiumAction): StadiumStat
 
     case 'START_SIMULATION':
       return { ...state, simulationActive: true };
+
+    case 'OPEN_ALL_GATES': {
+      const openedGates = state.gates.map((g) => ({
+        ...g,
+        status: 'open' as const,
+        flowRate: g.maxFlowRate,
+      }));
+      const updates = runSimUpdates(state, state.zones, openedGates);
+      return { ...state, ...updates };
+    }
 
     case 'STOP_SIMULATION': {
       const { zones: defaultZones, gates: defaultGates } = getInitialDataForStadium(state.selectedStadiumId);

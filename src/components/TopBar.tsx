@@ -43,7 +43,7 @@ export default function TopBar({ onSimulate }: TopBarProps) {
               >
                 {Object.values(stadiumsList).map((stadium) => (
                   <option key={stadium.id} value={stadium.id}>
-                    {stadium.name}
+                    {stadium.name} ({stadium.city})
                   </option>
                 ))}
               </select>
