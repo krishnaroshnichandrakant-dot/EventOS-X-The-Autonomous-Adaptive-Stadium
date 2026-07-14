@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Clock, Users, DoorOpen, Activity, ChevronDown } from 'lucide-react';
 import { useStadium } from '@/store/stadiumStore';
-import { getStadiumStats } from '@/data/mockData';
+import { getStadiumStats, stadiumsList } from '@/data/mockData';
 
 interface TopBarProps {
   onSimulate: () => void;
 }
 
 export default function TopBar({ onSimulate }: TopBarProps) {
-  const { state } = useStadium();
+  const { state, dispatch } = useStadium();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -35,9 +35,20 @@ export default function TopBar({ onSimulate }: TopBarProps) {
       <div className="flex items-center gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h2 className="text-[15px] font-semibold text-gray-900">
-              Wembley Stadium
-            </h2>
+            <div className="relative flex items-center bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl px-3 py-1.5 transition-all">
+              <select
+                value={state.selectedStadiumId}
+                onChange={(e) => dispatch({ type: 'SET_STADIUM', payload: e.target.value })}
+                className="text-[13px] font-bold text-slate-800 bg-transparent pr-6 focus:outline-none cursor-pointer appearance-none"
+              >
+                {Object.values(stadiumsList).map((stadium) => (
+                  <option key={stadium.id} value={stadium.id}>
+                    {stadium.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-3 pointer-events-none" />
+            </div>
             <span className={`badge ${status.class}`}>
               <span
                 className={`w-1.5 h-1.5 rounded-full ${

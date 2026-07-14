@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { StadiumState, StadiumAction, Zone, Gate, HistoryItem } from '@/types';
-import { initialZones, initialGates, simulateCrowdFluctuation } from '@/data/mockData';
+import { initialZones, initialGates, simulateCrowdFluctuation, getInitialDataForStadium } from '@/data/mockData';
 import { riskScenarios } from '@/data/scenarios';
 import { evaluateRisks } from '@/lib/riskEngine';
 import { calculateCascade } from '@/lib/cascadeEngine';
@@ -11,6 +11,7 @@ import { calculateCascade } from '@/lib/cascadeEngine';
 // Initial State
 // ============================================================
 const initialState: StadiumState = {
+  selectedStadiumId: 'wembley',
   zones: initialZones,
   gates: initialGates,
   weather: null,
@@ -41,6 +42,21 @@ function runSimUpdates(state: StadiumState, zones: Zone[], gates: Gate[]): Parti
 // ============================================================
 function stadiumReducer(state: StadiumState, action: StadiumAction): StadiumState {
   switch (action.type) {
+    case 'SET_STADIUM': {
+      const stadiumId = action.payload;
+      const { zones, gates } = getInitialDataForStadium(stadiumId);
+      const updates = runSimUpdates(state, zones, gates);
+      return {
+        ...state,
+        ...updates,
+        selectedStadiumId: stadiumId,
+        selectedZoneId: null,
+        selectedRiskId: null,
+        history: [],
+        playbackIndex: null,
+      };
+    }
+
     case 'SET_ZONES': {
       const updates = runSimUpdates(state, action.payload, state.gates);
       return { ...state, ...updates };
@@ -96,12 +112,13 @@ function stadiumReducer(state: StadiumState, action: StadiumAction): StadiumStat
       return { ...state, simulationActive: true };
 
     case 'STOP_SIMULATION': {
-      const cleanRisks = evaluateRisks(initialZones, initialGates, state.weather);
+      const { zones: defaultZones, gates: defaultGates } = getInitialDataForStadium(state.selectedStadiumId);
+      const cleanRisks = evaluateRisks(defaultZones, defaultGates, state.weather);
       return {
         ...state,
         simulationActive: false,
-        zones: initialZones,
-        gates: initialGates,
+        zones: defaultZones,
+        gates: defaultGates,
         risks: cleanRisks,
         predictions: [],
       };

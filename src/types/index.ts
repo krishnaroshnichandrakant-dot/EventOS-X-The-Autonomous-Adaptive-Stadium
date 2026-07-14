@@ -147,6 +147,7 @@ export interface Prediction {
 }
 
 export interface StadiumState {
+  selectedStadiumId: string;
   zones: Zone[];
   gates: Gate[];
   weather: WeatherData | null;
@@ -161,6 +162,7 @@ export interface StadiumState {
 }
 
 export type StadiumAction =
+  | { type: 'SET_STADIUM'; payload: string }
   | { type: 'SET_ZONES'; payload: Zone[] }
   | { type: 'UPDATE_ZONE'; payload: { id: string; updates: Partial<Zone> } }
   | { type: 'SET_GATES'; payload: Gate[] }
